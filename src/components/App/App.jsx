@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Searchbar from 'components/Searchbar/Searchbar';
@@ -10,53 +10,35 @@ import pixabayApi from 'components/Api/Api';
 import Modal from 'components/Modal/Modal';
 import Spinner from 'components/Loader/Spinner';
 
-export default class App extends Component {
-  state = {
-    status: 'idle',
-    query: [],
-    page: 1,
-    name: '',
-    modalAlt: '',
-    showModal: false,
-    modalImg: '',
-    error: null,
-  };
 
-  componentDidUpdate(_, prevState) {
-    const prevQuery = prevState.name;
-    const nextQuery = this.state.name;
-
-    const prevPage = prevState.page;
-    const nextPage = this.state.page;
-
-    if (nextPage > 1) {
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
-        behavior: 'smooth',
-      });
+export default function App() {
+  const [query, setQuery] = useState([]);
+  const [status, setStatus] = useState('idle');
+  const [name, setName] = useState('');
+  const [page, setPage] = useState(1);
+  const [modalImg, setModalImg] = useState('');
+  const [modalAlt, setModalAlt] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    if (query.trim() === '') {
+      return;
     }
 
-    if (prevQuery !== nextQuery) {
-      this.setState({ query: [], status: 'pending' });
-    }
+    setStatus('pending');
 
-    if (prevQuery !== nextQuery || prevPage !== nextPage) {
       pixabayApi
-        .fetchQuery(nextQuery, nextPage)
+        .fetchQuery(query, page)
         .then(({ hits }) => {
           const images = hits.map(({ id, webformatURL, largeImageURL, tags }) => {
             return { id, webformatURL, largeImageURL, tags };
           });
           // console.log(images);
           if (images.length > 0) {
-            this.setState(prevState => {
-              return {
-                query: [...prevState.query, ...images],
-                status: 'resolved',
-              };
-            });
+            setQuery(state => [...state, ...images]);
+          setStatus('resolved');
           } else {
-            alert(`По запросу ${nextQuery} ничего не найдено.`);
+            alert(`По запросу ${query} ничего не найдено.`);
             this.setState({ status: 'idle' });
           }
         })
